@@ -1,0 +1,95 @@
+﻿@page "/Product/Index"
+@inject HttpClient http
+@using BlazorApp1.Model
+
+<h3>Index</h3>
+
+<div class="mb-3">
+	<input @bind="SearchTerm" @bind:event="oninput" class="form-control" placeholder="Search products..." />
+</div>
+
+<a class="btn btn-success" href="/Product/Create">Create</a>
+
+@if (products == null)
+{
+<p>Loading...</p>
+}
+else if (!products.Any())
+	{
+		<p>No products available.</p>
+	}
+	else
+	{
+		<table class="table table-bordered">
+			<thead>
+				<tr>
+					<th>Name</th>
+					<th>Image</th>
+					<th>Price</th>
+					<th>StockQuantity</th>
+					<th>Actions</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var product in products)
+				{
+					<tr>
+						<td>@product.ProductName</td>
+						<td>
+							@if (!string.IsNullOrEmpty(product.ImagePath))
+							{
+								<img src="@product.ImagePath" alt="@product.ProductName" style="max-width: 100px;" />
+							}
+							else
+							{
+								<span>No image</span>
+							}
+						</td>
+						<td>@product.Price</td>
+						<td>@product.StockQuantity</td>
+						<td>
+							<a class="btn btn-primary" href="/Product/Edit/@product.ProductId">Edit</a>
+							<button class="btn btn-danger" @onclick="@(() => Delete(product.ProductId))">Delete</button>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+
+	}
+
+@code {
+	private List<Product> products;
+	private List<Product> filteredProducts;
+	private string SearchTerm = string.Empty;
+
+	protected override async Task OnInitializedAsync()
+	{
+		products = await http.GetFromJsonAsync<List<Product>>("/api/Product");
+		filteredProducts = products;
+	}
+
+
+	private void OnSearchChanged()
+	{
+		if (string.IsNullOrWhiteSpace(SearchTerm))
+		{
+			filteredProducts = products;
+		}
+		else
+		{
+			filteredProducts = products.Where(p =>
+				p.ProductName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+		}
+	}
+
+	private async Task Delete(int id)
+	{
+		var response = await http.DeleteAsync($"/api/Product/{id}");
+		if (response.IsSuccessStatusCode)
+		{
+			products.RemoveAll(p => p.ProductId == id);
+			OnSearchChanged();
+		}
+	}
+}

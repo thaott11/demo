@@ -1,0 +1,85 @@
+﻿@page "/Product/Edit/{id:int}"
+@inject HttpClient http
+@inject NavigationManager Navi
+@using BlazorApp1.Model
+<h3>Edit</h3>
+
+<EditForm Model="product" OnInvalidSubmit="HandleSubmit">
+	<DataAnnotationsValidator />
+	<ValidationSummary />
+
+	<div class="mb-3">
+		<label>Name</label>
+		<InputText class="form-control" @bind-Value="product.ProductName" />
+		<ValidationMessage For="@(() => product.ProductName)" />
+	</div>
+
+	<div class="mb-3">
+		<label>Image</label>
+		<InputFile OnChange="HandleSubmit" />
+		<ValidationMessage For="@(() => product.ImagePath)" />
+	</div>
+
+	<div class="mb-3">
+		<label>Price</label>
+		<InputNumber class="form-control" @bind-Value="product.Price" />
+		<ValidationMessage For="@(() => product.Price)" />
+	</div>
+
+	<div class="mb-3">
+		<label>StockQuantity</label>
+		<InputNumber class="form-control" @bind-Value="product.StockQuantity" />
+		<ValidationMessage For="@(() => product.StockQuantity)" />
+	</div>
+
+	<div class="mb-3">
+		<label>CreatedDate</label>
+		<InputDate class="form-control" @bind-Value="product.CreatedDate" />
+		<ValidationMessage For="@(() => product.CreatedDate)" />
+	</div>
+
+	<button class="btn btn-success" type="submit">Save</button>
+
+</EditForm>
+
+
+
+
+@code {
+	[Parameter]
+	public int id { get; set; }
+	private Product product = new();
+	private IBrowserFile file;
+	private string status = "";
+
+	protected override async Task OnInitializedAsync()
+	{
+		product = await http.GetFromJsonAsync<Product>($"/api/Product/{id}");
+	}
+
+    private async Task HandleSubmit()
+    {
+        using var content = new MultipartFormDataContent();
+        if (file != null)
+        {
+            content.Add(new StreamContent(file.OpenReadStream()), "file", file.Name);
+        }
+        content.Add(new StringContent(product.ProductName), "Name");
+        content.Add(new StringContent(product.Price.ToString()), "Price");
+        var response = await http.PutAsync($"api/product/{id}", content);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Navi.NavigateTo("/Product/Index");
+        }
+        else
+        {
+            status = await response.Content.ReadAsStringAsync();
+        }
+    }
+
+    private void Cancel()
+    {
+        Navi.NavigateTo("/Products/Index");
+    }
+}

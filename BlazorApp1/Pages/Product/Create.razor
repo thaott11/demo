@@ -1,0 +1,74 @@
+﻿@page "/Product/Create"
+@inject HttpClient http
+@inject NavigationManager Navi
+@using BlazorApp1.Model
+<h3>Create</h3>
+
+<EditForm Model="product" OnInvalidSubmit="CreatePro">
+	<DataAnnotationsValidator />
+	<ValidationSummary />
+
+	<div class="mb-3">
+		<label>Name</label>
+		<InputText class="form-control" @bind-Value="product.ProductName" />
+		<ValidationMessage For="@(() => product.ProductName)" />
+	</div>
+
+	<div class="mb-3">
+		<label>Image</label>
+		<InputFile OnChange="CreatePro" />
+		<ValidationMessage For="@(() => product.ImagePath)" />
+	</div>
+
+	<div class="mb-3">
+		<label>Price</label>
+		<InputNumber class="form-control" @bind-Value="product.Price" />
+		<ValidationMessage For="@(() => product.Price)" />
+	</div>
+
+	<div class="mb-3">
+		<label>StockQuantity</label>
+		<InputNumber class="form-control" @bind-Value="product.StockQuantity" />
+		<ValidationMessage For="@(() => product.StockQuantity)" />
+	</div>
+
+	<div class="mb-3">
+		<label>CreatedDate</label>
+		<InputDate class="form-control" @bind-Value="product.CreatedDate" />
+		<ValidationMessage For="@(() => product.CreatedDate)" />
+	</div>
+
+	<button class="btn btn-success" type="submit">Save</button>
+
+</EditForm>
+
+@code {
+	private Product product = new();
+	private IBrowserFile file;
+	private string status = "";
+	private void saveFile(InputFileChangeEventArgs e)
+	{
+		file = e.File;
+	}
+	private async Task CreatePro()
+	{
+		if (file == null)
+		{
+			status = "file null";
+		}
+		using var content = new MultipartFormDataContent();
+		content.Add(new StreamContent(file.OpenReadStream()), "file", file.Name);
+		content.Add(new StringContent(product.ProductName), "ProductName");
+		content.Add(new StringContent(product.Price.ToString()), "Price");
+		content.Add(new StringContent(product.StockQuantity.ToString()), "StockQuantity");
+		content.Add(new StringContent(product.CreatedDate.ToString()), "CreatedDate");
+
+		var respones = await http.PostAsJsonAsync("/api/Product", product);
+		if (respones.IsSuccessStatusCode)
+		{
+			Navi.NavigateTo("/Product/Index");
+		}
+
+	}
+
+}

@@ -1,0 +1,42 @@
+﻿@page "/Product/Seach"
+@using BlazorApp1.Model
+@inject HttpClient http
+
+<h3>Seach</h3>
+
+@code {
+	private List<Product> products;
+	private List<Product> filteredProducts;
+	private string SearchTerm = string.Empty;
+
+	protected override async Task OnInitializedAsync()
+	{
+		products = await http.GetFromJsonAsync<List<Product>>("/api/Product");
+		filteredProducts = products;
+	}
+
+	private void OnSearchChanged()
+	{
+		if (string.IsNullOrWhiteSpace(SearchTerm))
+		{
+			filteredProducts = products;
+		}
+		else
+		{
+			filteredProducts = products.Where(p =>
+				p.ProductName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+		}
+	}
+
+	private async Task Delete(int id)
+	{
+		var response = await http.DeleteAsync($"/api/Product/{id}");
+		if (response.IsSuccessStatusCode)
+		{
+			products.RemoveAll(p => p.ProductId == id);
+			OnSearchChanged();
+		}
+	}
+}
+
+
